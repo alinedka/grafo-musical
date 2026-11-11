@@ -1,9 +1,5 @@
 # Grafo Musical: Compositor Musical com Grafos
 
-Projeto da disciplina de Estrutura de Dados (ADO), Centro Universitário Senac.
-
-**Grupo:** Aline Douaki, Caíque Gandra Costa e Kayque de Sousa Cazzoto
-
 ## Sobre o projeto
 
 Programa em Java que **aprende uma música**, transforma essa música num **grafo dirigido e ponderado** e usa esse grafo para **compor músicas novas**.
