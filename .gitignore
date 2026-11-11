@@ -1,0 +1,13 @@
+#Arquivos compilados (o executar.bat recria)
+out/
+*.class
+
+#Arquivos salvos pelo programa
+*.mid
+
+#Configurações de editor e sistema
+.vscode/
+.idea/
+Thumbs.db
+desktop.ini
+.DS_Store

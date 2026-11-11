@@ -1,0 +1,4 @@
+#Garante que o .bat tenha quebras de linha do Windows
+*.bat text eol=crlf
+*.java text
+*.md text
