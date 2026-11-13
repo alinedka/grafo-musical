@@ -1,173 +1,223 @@
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
+import java.util.ArrayList;   //lista que cresce sozinha
+import java.util.Collections; //ferramentas para listas (usamos a versao "somente leitura")
+import java.util.List;        //o "tipo" lista
 
 /**
  * ============================================================================
- *  VÉRTICE DO GRAFO
+ *  vertice do grafo
  * ============================================================================
  *
- * PAPEL NO PROJETO:
- *   Cada bolinha que aparece no desenho do grafo é um objeto desta classe
+ * papel no projeto:
+ *   cada bolinha que aparece no desenho do grafo e um objeto desta classe
  *
- * O QUE UM VÉRTICE REPRESENTA:
- *   Um ESTADO musical, ou seja, "as últimas notas que foram tocadas"
- *   Quantas notas entram no estado depende da MEMÓRIA do grafo:
+ * o que um vertice representa:
+ *   um estado musical, ou seja, "as ultimas notas que foram tocadas"
+ *   quantas notas entram no estado depende da memoria do grafo:
  *
- *     - Memória 1: o estado tem 1 nota.  Vértice = "Sol4"
- *     - Memória 2: o estado tem 2 notas. Vértice = "[Sol4 Lá4]"
- *                  (quer dizer: "acabei de tocar Sol e depois Lá")
- *     - Memória 4: o estado tem 4 notas. Vértice = "[Dó4 Sol4 Sol4 Lá4]"
+ *     - memoria 1: o estado tem 1 nota.  vertice = "sol4"
+ *     - memoria 2: o estado tem 2 notas. vertice = "[sol4 la4]"
+ *                  (quer dizer: "acabei de tocar sol e depois la")
+ *     - memoria 4: o estado tem 4 notas. vertice = "[do4 sol4 sol4 la4]"
  *
- *   A nota que de fato SOA quando o passeio chega neste vértice
- *   é sempre a ÚLTIMA nota do estado (método getNota())
+ *   pense no estado como uma janelinha que desliza pela musica: a cada passo
+ *   ela perde a nota mais antiga e ganha uma nova no fim
  *
- * LISTA DE ADJACÊNCIA:
- *   Cada vértice guarda a lista das arestas (setas) que SAEM dele
- *   Juntando as listas de todos os vértices, temos a LISTA DE ADJACÊNCIA
- *   do grafo inteiro, que é a forma como o grafo fica guardado na memória
+ *   a nota que de fato soa quando o passeio chega neste vertice
+ *   e sempre a ultima nota do estado (metodo getNota()), porque as outras
+ *   ja foram tocadas nos passos anteriores
  *
- *   Exemplo (Brilha Brilha, memória 1):
- *     Sol4 -> [ Sol4 (peso 4), Lá4 (peso 2), Fá4 (peso 4) ]
+ * lista de adjacencia:
+ *   cada vertice guarda a lista das arestas (setas) que saem dele
+ *   juntando as listas de todos os vertices, temos a lista de adjacencia
+ *   do grafo inteiro, que e a forma como o grafo fica guardado na memoria
+ *
+ *   exemplo (brilha brilha, memoria 1):
+ *     sol4 -> [ sol4 (peso 4), la4 (peso 2), fa4 (peso 4) ]
  * ============================================================================
  */
 public class Vertice {
 
-    //As notas (em número MIDI) que formam o estado deste vértice
-    //Ex.: memória 2, estado [67, 69] = [Sol4, Lá4]
-    //É "final" porque o estado de um vértice nunca muda depois de criado
+    //as notas (em numero midi) que formam o estado deste vertice
+    //numero midi e como o java identifica cada nota: 60 = do4, 62 = re4, 67 = sol4...
+    //ex.: memoria 2, estado [67, 69] = [sol4, la4]
+    //e "final" porque o estado de um vertice nunca muda depois de criado
     private final List<Integer> estado;
 
-    //LISTA DE ADJACÊNCIA deste vértice: todas as arestas que saem dele
-    //Usamos ArrayList porque cada nota se liga a poucas outras (grafo esparso),
-    //então percorrer a lista é rápido e não desperdiça memória
+    //lista de adjacencia deste vertice: todas as arestas que saem dele
+    //usamos ArrayList porque cada nota se liga a poucas outras (grafo esparso),
+    //entao percorrer a lista e rapido e nao desperdica memoria
+    //a ordem da lista e a ordem em que cada seta apareceu pela primeira vez na musica
+    //(essa ordem define as "fatias" da roleta no sorteio)
     private final List<Aresta> adjacentes = new ArrayList<>();
 
-    //Soma dos pesos de todas as arestas de saída
-    //Guardamos pronta para não precisar somar toda vez que formos sortear
+    //soma dos pesos de todas as arestas de saida
+    //nao e calculada no final: comeca em 0 e sobe 1 em cada adicionarTransicao
+    //no fim do treino, e igual a quantas vezes esta nota apareceu na musica
+    //ex.: o sol aparece 10 vezes na brilha brilha, entao pesoTotalSaida = 10
+    //guardamos pronta para nao precisar somar toda vez que formos sortear
     //ou calcular uma probabilidade (probabilidade = peso / pesoTotalSaida)
+    //e o "tamanho do dado" no sorteio: random.nextInt(pesoTotalSaida)
     private int pesoTotalSaida;
 
     /**
-     * Cria um vértice para o estado informado
-     * List.copyOf faz uma cópia que não pode ser alterada, garantindo
-     * que ninguém de fora mude o estado deste vértice sem querer
+     * construtor: cria um vertice para o estado informado
+     * e chamado pelo GrafoMusical (obterOuCriarVertice) na primeira vez
+     * que um estado aparece na musica
+     *
+     * List.copyOf faz uma copia que nao pode ser alterada, garantindo
+     * que ninguem de fora mude o estado deste vertice sem querer
+     *
+     * @param estado as notas (numeros midi) que formam este vertice
      */
     public Vertice(List<Integer> estado) {
-        this.estado = List.copyOf(estado);
+        this.estado = List.copyOf(estado); //guarda uma copia protegida do estado
     }
 
     /**
-     * Registra a transição "deste vértice para o vértice destino"
-     * É chamado durante o TREINAMENTO, uma vez para cada par de estados
+     * registra a transicao "deste vertice para o vertice destino"
+     * e chamado durante o treinamento, uma vez para cada par de estados
      * seguidos na melodia
      *
-     *   - Se a aresta ainda NÃO existe: cria uma aresta nova (peso começa em 0)
-     *     e coloca na lista de adjacência
-     *   - Em seguida (existindo ou não antes): soma 1 no peso da aresta
+     *   - se a aresta ainda nao existe: cria uma aresta nova (peso comeca em 0)
+     *     e coloca na lista de adjacencia
+     *   - em seguida (existindo ou nao antes): soma 1 no peso da aresta
      *
-     * Exemplo: na Brilha Brilha, "Sol -> Fá" acontece 4 vezes,
-     * então este método é chamado 4 vezes e a aresta termina com peso 4
+     * a base para criar a seta e a propria musica: so existe seta entre duas
+     * notas que apareceram uma depois da outra na melodia original
      *
-     * @param destino o vértice para onde a música foi
-     * @param duracao duração da nota de chegada nesta ocorrência (o ritmo)
+     * exemplo: na brilha brilha, "sol -> fa" acontece 4 vezes,
+     * entao este metodo e chamado 4 vezes; na 1a vez cria a seta,
+     * nas outras 3 so soma no peso, que termina em 4
+     *
+     * @param destino o vertice para onde a musica foi
+     * @param duracao duracao da nota de chegada nesta ocorrencia (o ritmo)
      */
     public void adicionarTransicao(Vertice destino, double duracao) {
-        Aresta aresta = buscarAresta(destino);   //já existe uma seta para esse destino?
-        if (aresta == null) {
-            aresta = new Aresta(this, destino);  //não existe: cria a seta
-            adjacentes.add(aresta);              //e adiciona na lista de adjacência
+        Aresta aresta = buscarAresta(destino);   //ja existe uma seta para esse destino?
+        if (aresta == null) {                    //null = "nada": a seta ainda nao existe
+            aresta = new Aresta(this, destino);  //cria a seta saindo "deste" vertice (this) para o destino
+            adjacentes.add(aresta);              //e adiciona no fim da lista de adjacencia
         }
-        aresta.registrarOcorrencia(duracao);     //peso + 1 e guarda a duração
-        pesoTotalSaida++;                        //o total de saída também aumenta 1
+        aresta.registrarOcorrencia(duracao);     //peso + 1 e guarda a duracao
+        pesoTotalSaida++;                        //o total de saida tambem aumenta 1
     }
 
     /**
-     * Procura, na lista de adjacência, a aresta que vai até o destino informado
-     * Retorna null se ainda não existe seta deste vértice para lá
+     * procura, na lista de adjacencia, a aresta que vai ate o destino informado
+     * retorna null se ainda nao existe seta deste vertice para la
      *
-     * Comparamos com "==" (mesmo objeto) porque cada estado tem
-     * um único objeto Vertice no grafo
+     * comparamos com "==" (mesmo objeto) porque cada estado tem
+     * um unico objeto Vertice no grafo
+     *
+     * tambem e usado para montar a matriz de probabilidades (descreverMatriz)
+     *
+     * @param destino o vertice que queremos achar entre os vizinhos
+     * @return a aresta ate o destino, ou null se ela nao existir
      */
     public Aresta buscarAresta(Vertice destino) {
+        //percorre as setas que saem deste vertice, uma por uma
+        //para assim que acha (return) ou quando a lista acaba
         for (Aresta a : adjacentes) {
-            if (a.getDestino() == destino) {
-                return a;
+            if (a.getDestino() == destino) { //esta seta aponta para o destino procurado?
+                return a;                    //achou: devolve e sai do metodo na hora
             }
         }
-        return null;
+        return null; //percorreu tudo e nao achou: a seta nao existe
     }
 
     /**
-     * Probabilidade de o passeio seguir pela aresta informada, entre 0.0 e 1.0
+     * probabilidade de o passeio seguir pela aresta informada, entre 0.0 e 1.0
      *
-     *   probabilidade = peso da aresta / soma dos pesos de todas as saídas
+     *   probabilidade = peso da aresta / soma dos pesos de todas as saidas
      *
-     * Exemplo: Sol -> Fá tem peso 4 e o Sol tem total 10, então 4 / 10 = 0.40 (40%)
-     * O "(double)" é necessário: sem ele, 4 / 10 entre inteiros daria 0
+     * exemplo: sol -> fa tem peso 4 e o sol tem total 10, entao 4 / 10 = 0.40 (40%)
+     * o "(double)" e necessario: sem ele, 4 / 10 entre inteiros daria 0
+     *
+     * usado so para mostrar na tela (lista, matriz e desenho); o sorteio
+     * em si usa os pesos inteiros
+     *
+     * @param aresta uma das setas que saem deste vertice
+     * @return a chance de seguir por ela (0.40 = 40%)
      */
     public double probabilidade(Aresta aresta) {
         if (pesoTotalSaida == 0) {
-            return 0.0; //vértice sem saídas: evita divisão por zero
+            return 0.0; //vertice sem saidas: evita divisao por zero
         }
-        return (double) aresta.getPeso() / pesoTotalSaida;
+        return (double) aresta.getPeso() / pesoTotalSaida; //peso da seta dividido pelo total
     }
 
     /**
-     * A nota que SOA quando o passeio chega neste vértice: a última do estado
-     * Ex.: vértice [Sol4 Lá4] toca o Lá4
+     * a nota que soa quando o passeio chega neste vertice: a ultima do estado
+     * ex.: vertice [sol4 la4] toca o la4
+     *
+     * @return o numero midi da ultima nota do estado
      */
     public int getNota() {
+        //as posicoes de uma lista comecam em 0, entao a ultima e tamanho - 1
         return estado.get(estado.size() - 1);
     }
 
+    /** devolve todas as notas do estado (ex.: [60, 67] = [do4, sol4]) */
     public List<Integer> getEstado() {
         return estado;
     }
 
     /**
-     * Devolve a lista de adjacência "somente leitura", para que outras classes
-     * possam percorrê-la, mas não possam adicionar ou remover arestas por fora
+     * devolve a lista de adjacencia "somente leitura", para que outras classes
+     * possam percorre-la, mas nao possam adicionar ou remover arestas por fora
+     * (Collections.unmodifiableList da erro se alguem tentar mudar a lista)
      */
     public List<Aresta> getAdjacentes() {
         return Collections.unmodifiableList(adjacentes);
     }
 
+    /** devolve a soma dos pesos das setas de saida (o "tamanho do dado" do sorteio) */
     public int getPesoTotalSaida() {
         return pesoTotalSaida;
     }
 
     /**
-     * GRAU DE SAÍDA = quantidade de arestas diferentes que saem deste vértice
+     * grau de saida = quantidade de arestas diferentes que saem deste vertice
      *
-     *   - Grau 1: só existe um caminho (seta de 100%, cinza no desenho)
-     *   - Grau maior que 1: é um PONTO DE ESCOLHA, onde o passeio sorteia
+     *   - grau 1: so existe um caminho (seta de 100%, cinza no desenho)
+     *   - grau maior que 1: e um ponto de escolha, onde o passeio sorteia
      *     (setas roxas no desenho)
+     *
+     * ex.: sol4 na memoria 1 tem grau 3 (vai para sol4, la4 e fa4)
      */
     public int getGrauSaida() {
-        return adjacentes.size();
-    }
-
-    /** Nome curto, usado no cabeçalho da matriz. Ex.: "G4" ou "C4-G4" */
-    public String rotuloCurto() {
-        List<String> nomes = new ArrayList<>();
-        for (int nota : estado) {
-            nomes.add(Nota.nome(nota));
-        }
-        return String.join("-", nomes);
+        return adjacentes.size(); //cada item da lista e uma seta diferente
     }
 
     /**
-     * Nome do vértice em português, usado na lista de adjacência e na tela
-     * Ex.: "Sol4" (memória 1) ou "[Dó4 Sol4]" (memória 2 ou mais)
+     * nome curto, usado no cabecalho da matriz. ex.: g4 ou c4-g4
+     * usa as letras do padrao internacional (c = do, d = re, e = mi, f = fa, g = sol, a = la)
+     */
+    public String rotuloCurto() {
+        List<String> nomes = new ArrayList<>(); //vai guardar o nome de cada nota do estado
+        //percorre cada nota do estado e transforma o numero midi em nome (67 -> g4)
+        for (int nota : estado) {
+            nomes.add(Nota.nome(nota));
+        }
+        return String.join("-", nomes); //junta os nomes com hifen: c4 e g4 viram c4-g4
+    }
+
+    /**
+     * nome do vertice em portugues, usado na lista de adjacencia e na tela
+     * ex.: sol4 (memoria 1) ou [do4 sol4] (memoria 2 ou mais)
+     *
+     * "@Override" avisa que estamos substituindo o toString padrao do java,
+     * que e o metodo usado sempre que um objeto vira texto
      */
     @Override
     public String toString() {
+        //memoria 1: o estado tem uma nota so, entao mostra so o nome dela
         if (estado.size() == 1) {
             return Nota.nomePt(estado.get(0));
         }
+        //memoria 2 ou mais: mostra todas as notas entre colchetes
         List<String> nomes = new ArrayList<>();
-        for (int nota : estado) {
+        for (int nota : estado) { //percorre as notas do estado, da mais antiga para a mais recente
             nomes.add(Nota.nomePt(nota));
         }
         return "[" + String.join(" ", nomes) + "]";

@@ -1,26 +1,35 @@
-import java.util.List;
+import java.util.List; //List e a "lista" do java: uma sequencia de elementos em ordem
 
 /**
  * ============================================================================
- *  COMPOSIÇÃO: o resultado do passeio aleatório
+ *  composicao: o resultado do passeio aleatorio
  * ============================================================================
  *
- * PAPEL NO PROJETO:
- *   É o que o método GrafoMusical.compor() devolve. Junta duas listas
- *   do mesmo tamanho, posição a posição:
+ * papel no projeto:
+ *   e o que o metodo GrafoMusical.compor() devolve, juntando duas listas
+ *   do mesmo tamanho, posicao a posicao:
  *
- *   - musica:  as notas geradas, ou seja, o que vai ser TOCADO
- *   - caminho: o vértice do grafo em que o passeio estava em cada nota
- *              É usado para acender (em laranja) o vértice certo no desenho
- *              enquanto a música toca
+ *   - musica:  as notas geradas, ou seja, o que vai ser tocado
+ *   - caminho: o vertice do grafo em que o passeio estava em cada nota
+ *              e usado para acender (em laranja) o vertice certo no desenho
+ *              enquanto a musica toca
  *
- *   Exemplo:
- *     musica  = [ Dó4:1,   Sol4:1,   Fá4:1   ]
- *     caminho = [ vértice Dó4, vértice Sol4, vértice Fá4 ]
+ *   exemplo:
+ *     musica  = [ do4:1,   sol4:1,   fa4:1   ]
+ *     caminho = [ vertice do4, vertice sol4, vertice fa4 ]
  *
- *   Com memória maior que 1, as primeiras posições de "caminho" podem ser null:
- *   são as notas tocadas antes de existir notas suficientes para formar um estado
+ *   a posicao 0 de "musica" combina com a posicao 0 de "caminho", a 1 com a 1, e assim por diante
+ *
+ *   com memoria maior que 1, as primeiras posicoes de "caminho" podem ser null
+ *   (null quer dizer "nenhum vertice"): sao as notas iniciais, tocadas antes de
+ *   existir notas suficientes para formar um estado
+ *
+ * por que "record":
+ *   record e um tipo do java so para guardar dados; ele cria sozinho o construtor
+ *   e os metodos musica() e caminho() para ler as duas listas
  * ============================================================================
  */
 public record Composicao(List<EventoMusical> musica, List<Vertice> caminho) {
+    //musica  -> lista de notas (EventoMusical) que o TocadorMidi vai tocar
+    //caminho -> lista de vertices (Vertice) que o PainelGrafo vai acender, um por nota
 }
